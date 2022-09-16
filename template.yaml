@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  tweet-app-deleter
+
+  Sample SAM Template for tweet-app-deleter
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 20
+
+Resources:
+
+  TweetAppBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: tweet-app-ui-bucket-c121
+
+  TweetAppSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: tweet-app-secret
+      Description: This secret holds the mongodb atlas url
+      SecretString: mongodb+srv://mongodb:mongodb@tweetapp.mvy15xt.mongodb.net/?retryWrites=true&w=majority
+
+  TweetAppSns:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: tweet-app-sns
+
+  TweetSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: sampathchodipilli@gmail.com
+      Protocol: email
+      TopicArn: !Ref TweetAppSns
+
+  TweetSubscriptionSmsTwo:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: +919440819757
+      Protocol: sms
+      TopicArn: !Ref TweetAppSns
+
+  TweetAppQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: tweet-app-sqs
+
+  TweetAppFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: tweet-app-deleter
+      CodeUri: tweet-app-deleter
+      Handler: com.tweetapp.TweetHandler::handleRequest
+      Runtime: java11
+      Architectures:
+        - x86_64
+      MemorySize: 10240
+      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
+        Variables:
+          PARAM1: VALUE
+          JAVA_TOOL_OPTIONS: -XX:+TieredCompilation -XX:TieredStopAtLevel=1 # More info about tiered compilation https://aws.amazon.com/blogs/compute/optimizing-aws-lambda-function-performance-for-java/
+      Tags:
+        DeployedBy: Sampath
+      Events:
+        TweetApp:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /delete
+            Method: get
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt TweetAppQueue.Arn
+            BatchSize: 10
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  TweetAppSqs:
+    Description: "sqs queue"
+    Value: !GetAtt TweetAppQueue.Arn
+  TweetAppSns:
+    Description: "sns topic"
+    Value: !Ref TweetAppSns
+  TweetAppApi:
+    Description: "API Gateway endpoint URL for Prod stage for tweet app deleter function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+  TweetAppFunction:
+    Description: "tweet-app-deleter Lambda Function ARN"
+    Value: !GetAtt TweetAppFunction.Arn
+  TweetAppFunctionIamRole:
+    Description: "Implicit IAM Role created for tweet-app-deleter function"
+    Value: !GetAtt TweetAppFunctionRole.Arn

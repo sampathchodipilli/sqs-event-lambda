@@ -1,0 +1,10 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "tweet-app-deleter"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-lbzg4wtb5vsm"
+s3_prefix = "tweet-app-deleter"
+region = "ap-south-1"
+capabilities = "CAPABILITY_IAM"
+image_repositories = []
